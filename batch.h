@@ -1,2 +1,2 @@
 void handler(int);
-void execute(char *[], int);
+void execute(char *[]);

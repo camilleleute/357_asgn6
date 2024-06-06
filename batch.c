@@ -12,7 +12,6 @@ int eflag = 0, vflag = 0, numcmds = 0;
 pid_t PIDS[2048];
 char *progs[2048][2048];
 
-void execute(char *cmds[], int vflag);
 void handler(int signum);
 
 int main(int argc, char *argv[]) {
@@ -111,21 +110,32 @@ int main(int argc, char *argv[]) {
         }
 
         PIDS[p] = fork();
-        if (PIDS[p] < 0) {
-            perror("fork failure");
-            exit(EXIT_FAILURE);
-        } else {
-            if (PIDS[p] == 0) {
-                char *command[2048];
+        
+	char *command[2048];
                 int j = 0;
                 while (progs[p][j] != '\0') {
                     command[j] = progs[p][j];
                     j++;
                 }
                 command[j] = NULL;
-                execute(command, vflag);
+
+	if (PIDS[p] < 0) {
+            perror("fork failure");
+            exit(EXIT_FAILURE);
+        } else {
+            if (PIDS[p] == 0) {
+                execute(command);
             } else {
-                running++;
+                
+		if (vflag) {
+        		fprintf(stderr, "+ %s", command[0]);
+        		for (int i = 1; command[i] != NULL; i++) {
+            			fprintf(stderr, " %s", command[i]);
+        		}
+        		fprintf(stderr, "\n");
+    		}
+		running++;
+		
             }
         }
     }
@@ -165,14 +175,7 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void execute(char *cmds[], int vflag) {
-    if (vflag) {
-        fprintf(stderr, "+ %s", cmds[0]);
-        for (int i = 1; cmds[i] != NULL; i++) {
-            fprintf(stderr, " %s", cmds[i]);
-        }
-        fprintf(stderr, "\n");
-    }
+void execute(char *cmds[]) {
 
     execvp(cmds[0], cmds);
     perror(cmds[0]);
