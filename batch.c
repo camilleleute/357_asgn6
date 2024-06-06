@@ -8,11 +8,10 @@
 #include <errno.h>
 #include "batch.h"
 
-int eflag = 0, vflag = 0, numcmds = 0;
+int eflag = 0, vflag = 0, die = 0, numcmds = 0;
 pid_t PIDS[2048];
 char *progs[2048][2048];
 
-void handler(int signum);
 
 int main(int argc, char *argv[]) {
     int opt;
@@ -76,44 +75,43 @@ int main(int argc, char *argv[]) {
     }
 
     int running = 0;
-    if ((numExecSim == 0) || (numExecSim > numcmds)) {
+    int exit_stat = EXIT_SUCCESS;
+	if ((numExecSim == 0) || (numExecSim > numcmds)) {
         numExecSim = numcmds;
     }
 
     for (int p = 0; p < numcmds; p++) {
-        if (running >= numExecSim) {
+        //waiting
+	while (running >= numExecSim && !die) {
             int status;
             pid_t finish_pid = wait(&status);
             running--;
 
-            for (int j = 0; j < numcmds; j++) {
-                if (PIDS[j] == finish_pid) {
-                    if (eflag && WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) {
-                        for (int k = 0; k < numcmds; k++) {
-                            if (PIDS[k] > 0) {
-                                kill(PIDS[k], SIGKILL);
-                            }
-                        }
-                        exit(EXIT_FAILURE);
-                    }
-
+         	if (finish_pid>0 && WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) {
+            		exit_stat = EXIT_FAILURE;
+			if (!die && eflag){
+				handler(SIGKILL);
+			}
+		}
                     if (vflag) {
-                        fprintf(stderr, "- %s", progs[j][0]);
-                        for (int k = 1; progs[j][k] != '\0'; k++) {
-                            fprintf(stderr, " %s", progs[j][k]);
+                        fprintf(stderr, "- %s", progs[p][0]);
+                        for (int k = 1; progs[p][k] != '\0'; k++) {
+                            fprintf(stderr, " %s", progs[p][k]);
                         }
                         fprintf(stderr, "\n");
                     }
                     break;
-                }
-            }
         }
-
+        
+	if (die) {
+		break;
+	}
+	//do yo thing
         PIDS[p] = fork();
         
 	char *command[2048];
                 int j = 0;
-                while (progs[p][j] != '\0') {
+            	while (progs[p][j] != '\0') {
                     command[j] = progs[p][j];
                     j++;
                 }
@@ -124,7 +122,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         } else {
             if (PIDS[p] == 0) {
-                execute(command);
+                execute(command); // should be execvp(), and perror then exit
             } else {
                 
 		if (vflag) {
@@ -137,14 +135,14 @@ int main(int argc, char *argv[]) {
 		running++;
 		
             }
-        }
-    }
+     }
+  }
 
     while (running > 0) {
 	int status;
         pid_t finish_pid = wait(&status);
         running--;
-        for (int j = 0; j < numcmds; j++) {
+        for (int j = 0; j < numcmds; j++) { // idk if you need this for loop
             if (PIDS[j] == finish_pid) {
                 if (vflag) {
 		fprintf(stderr, "- %s", progs[j][0]);
@@ -154,7 +152,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "\n");
                 }
 
-                if (eflag && WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) {
+                if (eflag && WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) { 
                     for (int i = 0; i < numcmds; i++) {
                         if (PIDS[i] > 0) {
                             kill(PIDS[i], SIGTERM);
@@ -172,9 +170,8 @@ int main(int argc, char *argv[]) {
             free(progs[i][j]);
         }
     }
-    return EXIT_SUCCESS;
-}
-
+    exit(exit_stat);
+	}
 void execute(char *cmds[]) {
 
     execvp(cmds[0], cmds);
@@ -183,7 +180,7 @@ void execute(char *cmds[]) {
 }
 
 void handler(int signum) {
-    eflag = 1;
+    die = 1;
     for (int i = 0; i < numcmds; i++) {
         if (PIDS[i] > 0) {
             kill(PIDS[i], signum);
