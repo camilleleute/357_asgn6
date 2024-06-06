@@ -135,33 +135,37 @@ int main(int argc, char *argv[]) {
 		running++;
 		
             }
-     }
-  }
+     		}
+  	}
+	int o = 0;
+    	while (running > 0) {
+            int status;
+            pid_t finish_pid = wait(&status);
+            running--;
 
-    while (running > 0) {
-	int status;
-        pid_t finish_pid = wait(&status);
-        running--;
-        for (int j = 0; j < numcmds; j++) { // idk if you need this for loop
-            if (PIDS[j] == finish_pid) {
-                if (vflag) {
-		fprintf(stderr, "- %s", progs[j][0]);
-                    for (int k = 1; progs[j][k] != '\0'; k++) {
-                        fprintf(stderr, " %s", progs[j][k]);
-                    }
-                    fprintf(stderr, "\n");
-                }
-
-                if (eflag && WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) { 
-                    for (int i = 0; i < numcmds; i++) {
-                        if (PIDS[i] > 0) {
-                            kill(PIDS[i], SIGTERM);
+                if (finish_pid>0 && WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) {
+                        exit_stat = EXIT_FAILURE;
+                        if (!die && eflag){
+                                handler(SIGKILL);
                         }
-                    }
-                    exit(EXIT_FAILURE);
                 }
-                break;
-            }
+
+
+		if (vflag) {
+			for (int y = 0; y < numcmds; y++){
+				if (PIDS[y] == finish_pid){
+					if (vflag) {
+                        			fprintf(stderr, "- %s", progs[y][0]);
+                        			for (int k = 1; progs[y][k] != '\0'; k++) {
+                            				fprintf(stderr, " %s", progs[y][k]);
+                        			}
+                        			fprintf(stderr, "\n");
+                    			}
+                    		break;
+		
+				}
+
+			}
         }
     }
 
@@ -172,6 +176,8 @@ int main(int argc, char *argv[]) {
     }
     exit(exit_stat);
 	}
+
+
 void execute(char *cmds[]) {
 
     execvp(cmds[0], cmds);
