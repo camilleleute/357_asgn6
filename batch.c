@@ -16,15 +16,11 @@ char *progs[2048][2048];
 int main(int argc, char *argv[]) {
     int opt;
     int numExecSim = 0, prog_idx = 0;
-    struct sigaction action;
     opterr = 0;
-    action.sa_handler = handler;
-    action.sa_flags = SA_RESTART;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGQUIT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
 
+	signal(SIGTERM, handler);
+	signal(SIGINT, handler);
+	signal(SIGQUIT, handler);
     while ((opt = getopt(argc, argv, "n:ev")) != -1) {
         switch (opt) {
             case 'n':
@@ -137,7 +133,6 @@ int main(int argc, char *argv[]) {
             }
      		}
   	}
-	int o = 0;
     	while (running > 0) {
             int status;
             pid_t finish_pid = wait(&status);
