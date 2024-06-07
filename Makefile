@@ -18,10 +18,8 @@ batch.o: batch.c
 testprog.o: testprog.c
 	$(CC) $(CFLAGS) -c testprog.c -o testprog.o
 
-debug: clean batch testprog
+debug: batch testprog
 
-valgrind: debug
-	valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes ./batch $(ARGS)
 
 test: batch testprog
 	./batch $(ARGS)
