@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
-    
+   //parsing 
     int arg_idx;
     optind--;
     while (optind < argc) {
@@ -89,14 +89,24 @@ int main(int argc, char *argv[]) {
 				handler(SIGKILL);
 			}
 		}
-                    if (vflag) {
-                        fprintf(stderr, "- %s", progs[p][0]);
-                        for (int k = 1; progs[p][k] != '\0'; k++) {
-                            fprintf(stderr, " %s", progs[p][k]);
+
+		if (vflag) {
+                        for (int y = 0; y < numcmds; y++){
+                                if (PIDS[y] == finish_pid){
+                                        if (vflag) {
+                                                fprintf(stderr, "- %s", progs[y][0]);
+                                                for (int k = 1; progs[y][k] != '\0'; k++) {
+                                                        fprintf(stderr, " %s", progs[y][k]);
+                                                }
+                                                fprintf(stderr, "\n");
+                                        }
+                                break;
+
+                                }
+
                         }
-                        fprintf(stderr, "\n");
-                    }
-                    break;
+        }
+
         }
         
 	if (die) {
